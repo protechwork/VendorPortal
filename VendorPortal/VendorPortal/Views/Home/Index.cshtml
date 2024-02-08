@@ -1,0 +1,114 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+
+<div class="row">
+    <div class="col-md-8">
+        <section id="loginForm">
+                          
+                <h2>Login</h2>
+                <hr />
+                <div class="form-group">
+                    <label class="col-md-2 control-label" for="Email">User Name:</label>
+                    <div class="col-md-10">
+                        <input class="form-control" data-val="true" data-val-email="The Email field is not a valid e-mail address." data-val-required="The Email field is required." id="user_id" name="user_id" type="text" value="dhanashreeart_nsk@yahoo.com" />
+                        <span class="field-validation-valid text-danger" data-valmsg-for="Email" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-md-2 control-label" for="Password">Password:</label>
+                    <div class="col-md-10">
+                        <input class="form-control" data-val="true" data-val-required="The Password field is required." id="password" name="password" type="password" value="123" />
+                        <span class="field-validation-valid text-danger" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+             
+                <div class="form-group">
+                    <div class="col-md-offset-2 col-md-10">
+                        <input id="btn_login" type="submit" value="Log in" class="btn btn-default" />
+                        <a href="@Url.Action("Register", "Home")">Register</a>
+                    </div>
+                </div>
+
+                
+                
+           
+        </section>
+    </div>    
+</div>
+
+
+@section Scripts {
+
+    <!--<script src="/VendorPortal/Scripts/VendorPortal.js"></script>-->
+    <script type="text/javascript">
+
+
+        $("#btn_login").click(function ()
+        {
+            //alert($("#user_id").val());
+            //alert($("#password").val());
+
+            $.ajax({
+                type: "POST",               
+                url: "@Url.Action("Login", "Home")",
+
+                data: {
+                    user_name: $("#user_id").val(),
+                    password: $("#password").val()
+                },
+                dataType: "json",
+                success: function (response) {
+                    // Handle the response from the server
+                    console.log(response);
+                    //alert(response.data.message);
+                    //document.location = "/PendingOrder";
+                    //document.location = "@Url.Action("PendingOrder", "Home")";
+                    if (response.status)
+                    {
+                        document.location = "@Url.Action("PendingOrder", "Home")";
+                    }
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+
+
+        });
+
+
+        function deleteCompany(ID) {
+            // Send the AJAX request
+            $.ajax({
+                type: "POST",
+                url: "HOME/delete_company.php",
+                data: {
+                    id: ID
+                },
+                dataType: "json",
+                success: function (response) {
+                    // Handle the response from the server
+                    if (response.status === "success") {
+                        // Display success message
+                        alert("Database updated successfully.");
+                        location.reload(true);
+                    } else if (response.status === "exist") {
+                        // Display success message
+                        alert("Record Already Found in Contact.");
+                    } else {
+                        // Display error message
+                        alert("Failed to update Database.");
+                    }
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+    </script>
+}
+

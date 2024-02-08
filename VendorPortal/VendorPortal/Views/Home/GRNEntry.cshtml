@@ -1,0 +1,213 @@
+﻿
+@{
+    ViewBag.Title = "GRNEntry";
+}
+
+<h2>GRN Entry</h2>
+<hr />
+<div class="container">
+    <div class="row" style="padding: 10px;">
+        <div class="col-md-6">                             
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="branch">Branch:</label>
+                <div class="col-md-10">
+                    <input class="form-control" id="branch" name="branch" type="text" disabled value="" />                    
+                </div>
+            </div>             
+        </div>
+    </div>
+
+    <div class="row" style="padding: 10px;">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="dc_no">DC No:</label>
+                <div class="col-md-10">
+                    <input class="form-control" id="dc_no" name="dc_no" type="text" value="" />
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Email" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="dc_date">DC Date:</label>
+                <div class="col-md-10">
+                    <input class="form-control" id="dc_date" name="dc_date" type="date" />
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="padding: 10px;">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="bill_no">Bill No:</label>
+                <div class="col-md-10">
+                    <input class="form-control" id="bill_no" name="bill_no" type="text" value="" />
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Email" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="bill_date">Bill Date:</label>
+                <div class="col-md-10">
+                    <input class="form-control" id="bill_date" name="bill_date" type="date" />
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <table id="grn_table" class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Sr No</th>                   
+                    <th>Item</th>
+                    <th>Pending Qty</th>
+                    <th>Challan Qty</th>                      
+                    <th>PO Rate</th>                      
+                    <th>Challan Rate</th>                      
+                </tr>
+            </thead>
+            <tbody id="grnBody">
+                <!--<tr>
+                    <td>Sr No</td>
+                    <td>Item</td>
+                    <td>Pending Qty</td>
+                    <td><input id="challan" name="challan" type="text" /></td>
+                    <td>PO Rate</td>
+                    <td><input id="challan" name="challan" type="text" /></td>
+                </tr>
+
+                <tr>
+                    <td>Sr No</td>
+                    <td>Item</td>
+                    <td>Pending Qty</td>
+                    <td><input id="challan" name="challan" type="text" /></td>
+                    <td>PO Rate</td>
+                    <td><input id="challan" name="challan" type="text" /></td>
+                </tr>
+                    -->
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div class="form-group">
+    <div class="col-md-offset-2 col-md-10">
+        <input id="save_grn" type="submit" value="Save GRN" class="btn btn-default" />
+    </div>
+</div>        
+
+@*@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}*@
+
+@section Scripts {
+    <script type="text/javascript">
+        LoadTable();
+        $('#save_grn').click(function () {
+            GRN_Save();
+        });
+
+        function GRN_Save()
+        {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("PostGRN", "Home")",
+                data: {               
+                },
+            dataType: "json",
+            success: function (response) {
+                // Handle the response from the server
+                console.log(response);
+
+                var data = JSON.parse(response);
+                
+            },
+            error: function () {
+                // Display error message
+                alert("An error occurred while updating Database.");
+            }
+            });
+
+            return;
+            $('.challan').each(function () {
+                //$("#" + $(this).attr("arg4")).val()
+                //alert($(this).val());
+                //alert($("#" + $(this).attr("arg4")).val());
+                SaveGRN($(this).attr("arg1"), $(this).attr("arg2"), $(this).attr("arg3"), $(this).val(), $("#" + $(this).attr("arg4")).val())
+            });            
+        }
+
+        function SaveGRN(IBody, Pend_Qty, PORate, ChallanQty, ChallanRate)
+        {            
+            console.log(IBody, Pend_Qty, PORate, ChallanQty, ChallanRate);
+            //return;
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("SaveGRN", "Home")",
+                data: {
+                    DCNo: $("#dc_no").val(),
+                    DCDate: $("#dc_date").val(),
+                    BillNo: $("#bill_no").val(),
+                    BillDate: $("#bill_date").val(),
+                    IBody: IBody,
+                    Pend_Qty: Pend_Qty,
+                    PORate: PORate,
+                    ChallanQty: ChallanQty,
+                    ChallanRate: ChallanRate
+                },
+                dataType: "json",
+                success: function (response) {
+                // Handle the response from the server
+                console.log(response);
+
+                var data = JSON.parse(response);
+                
+            },
+            error: function () {
+                // Display error message
+                alert("An error occurred while updating Database.");
+            }
+        });
+        }
+
+        function LoadTable ()
+        {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("FillGRN", "Home")",
+                data: {
+                },
+                dataType: "json",
+                success: function (response) {
+                    // Handle the response from the server
+                    console.log(response);
+
+                    var data = JSON.parse(response);
+                    data.forEach(function (item, index) {                                              
+                        $("#branch").val(item.branch_name);
+                        var td = "";
+                        td = td + "<td>" + (Number(index) + 1) + "</td>";
+                        td = td + "<td>" + item.item_name + "</td>";
+                        td = td + "<td>" + item.Pend_Qty + "</td>";
+                        td = td + "<td><input id='challan_qty" + index + "' type='text' class='challan' arg1='" + item.iBodyId + "' arg2='" + item.Pend_Qty + "' arg3='" + item.PORate + "' arg4='challan_rate" + index + "' /></td>";
+                        td = td + "<td>" + item.PORate + "</td>";
+                        td = td + "<td><input id='challan_rate" + index + "' type='text' /></td>";
+                        $("#grnBody").append("<tr>" + td + "</tr>");
+                    });
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+    </script>
+}

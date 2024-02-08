@@ -1,0 +1,17 @@
+VendorPortal/VendorPortal/App_Data/**
+VendorPortal/VendorPortal/App_Start/**
+VendorPortal/VendorPortal/bin/**
+VendorPortal/VendorPortal/Content/**
+VendorPortal/Docs/**
+VendorPortal/packages/**
+VendorPortal/VendorPortal/fonts/**
+VendorPortal/VendorPortal/obj/**
+VendorPortal/VendorPortal/Properties/**
+VendorPortal/VendorPortal/favicon.ico
+VendorPortal/VendorPortal/Global.asax
+VendorPortal/VendorPortal/Global.asax.cs
+VendorPortal/VendorPortal/Project_Readme.html
+VendorPortal/VendorPortal/ReadMe.txt
+VendorPortal/VendorPortal/Startup.cs
+VendorPortal/VendorPortal/favicon.ico
+Release Build/**

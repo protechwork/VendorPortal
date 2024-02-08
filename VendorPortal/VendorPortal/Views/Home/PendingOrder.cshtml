@@ -1,0 +1,274 @@
+﻿
+@{
+    ViewBag.Title = "PendingOrder";
+}
+<h3>Pending Order</h3>
+<div class="row">
+    <div class="col-md-12">
+        <!--<h1>@Session["UserID"].ToString()</h1>-->
+        <label>Start Date:</label>
+        <input type="date" id="start_date" name="start_date">
+        <label>End Date:</label>
+        <input type="date" id="end_date" name="end_date">
+        <label>Branch:</label>
+        <select name="branch" id="branch">
+            <option value="volvo">Volvo</option>
+            <option value="saab">Saab</option>
+            <option value="mercedes">Mercedes</option>
+            <option value="audi">Audi</option>
+        </select>
+        <input type="button" id="refresh" value="Refresh" />
+        <section id="loginForm">
+            <table id="pendingPO" class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Sr No</th>
+                        <th>Vtype</th>
+                        <th>Document No</th>
+                        <th>Branch</th>
+                        <th>Item</th>
+                        <th>Pending Qty</th> 
+                        <th>Select</th>                       
+                    </tr>
+                </thead>
+                <tbody id="pendingPOBody">                                  
+                    <!--<tr>
+                        <td>Sr No</td>
+                        <td>Vtype</td>
+                        <td>Document No</td>
+                        <td>Branch</td>
+                        <td>Item</td>
+                        <td>Pending Qty</td>
+                        <td><input type="checkbox" id="vehicle1" class="ads_Checkbox" name="selector[]" value="1"></td>
+                    </tr>
+                    <tr>
+                        <td>Sr No</td>
+                        <td>Vtype</td>
+                        <td>Document No</td>
+                        <td>Branch</td>
+                        <td>Item</td>
+                        <td>Pending Qty</td>
+                        <td><input type="checkbox" id="vehicle1" class="ads_Checkbox" name="selector[]" value="2"></td>
+                    </tr>
+                        -->
+                </tbody>
+            </table>
+            <input type="button" id="save_value" value="Proccess" />
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+
+    <!--<script src="/VendorPortal/Scripts/VendorPortal.js"></script>-->
+    <script type="text/javascript">
+        //LoadPO();
+        var Totalrecord = 0;
+        var Processrecord = 0;
+        $('#save_value').click(function () {
+            RemoveData();
+
+        });
+        LoadBranch();
+        $("#refresh").click(function () {
+            LoadPO();
+        });
+
+        function RemoveData()
+        {
+            $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("DeletePO", "Home")",
+                    data: {
+                    },
+                    dataType: "json",
+                    success: function (response) {
+                    // Handle the response from the server
+                        console.log(response);
+                        $('.ads_Checkbox:checked').each(function () {
+                            //alert($(this).val());
+                            //alert($(this).attr("arg1"));
+                            SavePendPo($(this).attr("arg1"), $(this).attr("arg2"), $(this).attr("arg3"), $(this).attr("arg4"), $(this).attr("arg5"), $(this).val());
+                            Totalrecord++;
+                        });
+                        //alert("Save Completed");
+
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+
+        function ValidatePO()
+        {
+            $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("ValidatePO", "Home")",
+                    data: {
+                    },
+                dataType: "json",
+                success: function (response) {
+                    // Handle the response from the server
+                    if (response.status)
+                    {
+                        //document.location = "@Url.Action("GRNEntry", "Home")";
+                        document.location = "@Url.Action("MRNEntry", "Home")";
+                    }
+                    else
+                    {
+                        alert(response.data.message);
+                    }
+
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+
+        function LoadPO()
+        {
+            $("#pendingPOBody").html("");
+            $.ajax({
+                    type: "POST",
+                    //url: "VendorPortal/Login",
+                    //url: "@Url.Action("Login", "VendorPortal")",
+                    url: "@Url.Action("GetPO", "Home")",
+
+                    data: {
+                    },
+                dataType: "json",
+                success: function (response) {
+                    //console.log(response);
+
+                    var data = JSON.parse(response);
+
+                    data.forEach(function (item, index) {
+                        //console.log(item, index);
+                        var td = "";
+                        td = td + "<td>" + (Number(index) + 1) + "</td>";
+                        td = td + "<td>" + item.sAbbr + "</td>";
+                        td = td + "<td>" + item.sVoucherNo + "</td>";
+                        td = td + "<td>" + item.BranchName + "</td>";
+                        td = td + "<td>" + item.sName + "</td>";
+                        td = td + "<td>" + item.bal + "</td>";
+                        td = td + "<td><input type='checkbox' id='po" + (Number(index) + 1) + "' class='ads_Checkbox' name='selector[]' arg1='" + item.sAbbr + "' arg2='" + item.sVoucherNo + "' arg3='" + item.Branch + "' arg4='" + item.iProductId + "' arg5='" + item.bal + "' value='" + item.iBodyId + "'></td>";
+                        $("#pendingPOBody").append("<tr>" + td + "</tr>");
+                    });
+
+                    //console.log(data);
+
+
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+
+        function SavePendPo(Vtype, DocNo, Branch_Id, Item_Id, Pend_Qty, IbodyId)
+        {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("SavePendPo", "Home")",
+                data: {
+                    Vtype: Vtype,
+                    DocNo: DocNo,
+                    Branch_Id: Branch_Id,
+                    Item_Id: Item_Id,
+                    Pend_Qty: Pend_Qty,
+                    IbodyId: IbodyId
+                },
+                dataType: "json",
+                success: function (response) {
+                    // Handle the response from the server
+                    console.log(Vtype, DocNo, Branch_Id, Item_Id, Pend_Qty);
+                    Processrecord++;
+                    if (Totalrecord == Processrecord)
+                    {
+                        ValidatePO();
+                    }
+
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+
+
+        function LoadBranch()
+        {
+            $("#branch").html("");
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("FillBranch", "Home")",
+
+                data: {
+                },
+            dataType: "json",
+            success: function (response) {
+                //console.log(response);
+
+                var data = JSON.parse(response);
+
+                data.forEach(function (item, index) {
+                    //console.log(item, index);
+                    var td = "";
+                    td = td + "<option value='" + item.iMasterId + "'>" + item.sName + "</option>";
+                    $("#branch").append(td);
+                });
+
+                //console.log(data);
+
+
+            },
+            error: function () {
+                // Display error message
+                alert("An error occurred while updating Database.");
+            }
+        });
+        }
+
+        $("#btn_login").click(function ()
+        {
+            alert($("#user_id").val());
+            alert($("#password").val());
+
+            $.ajax({
+                type: "POST",
+                //url: "VendorPortal/Login",
+                //url: "@Url.Action("Login", "VendorPortal")",
+                url: "@Url.Action("Login", "Home")",
+
+                data: {
+                    user_name: $("#user_id").val(),
+                    password: $("#password").val()
+                },
+                dataType: "json",
+                success: function (response) {
+                    // Handle the response from the server
+                    alert(response.data.message);
+                    //document.location = "/PendingOrder";
+                    if (response.status)
+                    {
+                        document.location = "@Url.Action("PendingOrder", "Home")";
+                    }
+
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+
+
+        });
+
+    </script>
+}

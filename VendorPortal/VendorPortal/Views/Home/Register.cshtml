@@ -1,0 +1,125 @@
+﻿
+@{
+    ViewBag.Title = "Register User";
+}
+
+<h2>Register User</h2>
+<hr />
+<div class="container">
+    <div class="row" style="padding: 10px;">
+
+
+        <div class="row" style="padding: 10px;">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="col-md-2 control-label" for="account_id">Account:</label>
+                    <div class="col-md-10">
+                        <select id="account_id" class="form-control"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="user_name">User Name:</label>
+                <div class="col-md-10">
+                    <input class="form-control" id="user_name" name="user_name" type="text" value="" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="padding: 10px;">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="password">Password:</label>
+                <div class="col-md-10">
+                    <input class="form-control" id="password" name="password" type="text" value="" />
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Email" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+
+
+</div>
+
+<div class="form-group">
+    <div class="col-md-offset-2 col-md-10">
+        <input id="register" type="submit" value="Register" class="btn btn-default" />
+    </div>
+</div>
+
+@*@section Scripts {
+        @Scripts.Render("~/bundles/jqueryval")
+    }*@
+
+@section Scripts {
+    <script type="text/javascript">
+        LoadTable();
+
+        $('#register').click(function () {
+            GRN_Save();
+        });
+
+        function GRN_Save()
+        {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("Register_User", "Home")",
+                data: {
+                    UserName: $("#user_name").val(),
+                    Password: $("#password").val(),
+                    PartyId: $("#account_id").val()
+                },
+                dataType: "json",
+                success: function (response) {
+                    console.log(response);
+                    alert(response);
+
+                    if (response == "User Register Successfully")
+                    {
+                        document.location = "@Url.Action("Login", "Home")";
+                    }
+
+
+                    //var data = JSON.parse(response);
+                    //alert("Data Posted Successfully");
+                },
+                error: function () {
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+
+        function LoadTable ()
+        {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("FillAccounts", "Home")",
+                data: {
+                },
+                dataType: "json",
+                success: function (response) {
+                    // Handle the response from the server
+                    console.log(response);
+                    $("#account_id").html("");
+                    var options = "";
+                    var data = JSON.parse(response);
+                    data.forEach(function (item, index) {
+                        options = options + "<option value='" + item.Id + "'>" + item.Name + "</td>";
+                    });
+                    $("#account_id").html(options);
+                },
+                error: function () {
+                    // Display error message
+                    alert("An error occurred while updating Database.");
+                }
+            });
+        }
+    </script>
+}
