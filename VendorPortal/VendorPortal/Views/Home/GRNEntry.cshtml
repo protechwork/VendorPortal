@@ -110,39 +110,44 @@
 
 @section Scripts {
     <script type="text/javascript">
+        var Totalrecord = 0;
+        var Processrecord = 0;
         LoadTable();
+
         $('#save_grn').click(function () {
             GRN_Save();
         });
 
         function GRN_Save()
         {
-            $.ajax({
-                type: "POST",
-                url: "@Url.Action("PostGRN", "Home")",
-                data: {               
-                },
-            dataType: "json",
-            success: function (response) {
-                // Handle the response from the server
-                console.log(response);
 
-                var data = JSON.parse(response);
-                
-            },
-            error: function () {
-                // Display error message
-                alert("An error occurred while updating Database.");
-            }
-            });
-
-            return;
             $('.challan').each(function () {
                 //$("#" + $(this).attr("arg4")).val()
                 //alert($(this).val());
                 //alert($("#" + $(this).attr("arg4")).val());
                 SaveGRN($(this).attr("arg1"), $(this).attr("arg2"), $(this).attr("arg3"), $(this).val(), $("#" + $(this).attr("arg4")).val())
-            });            
+            });
+        }
+
+        function PostGRN()
+        {
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("PostGRN", "Home")",
+                data: {
+                },
+            dataType: "json",
+            success: function (response) {                
+                console.log(response);
+
+                var data = JSON.parse(response);
+                alert("Data Posted Successfully");
+
+            },
+            error: function () {                
+                alert("An error occurred while updating Database.");
+            }
+        });
         }
 
         function SaveGRN(IBody, Pend_Qty, PORate, ChallanQty, ChallanRate)
@@ -165,11 +170,18 @@
                 },
                 dataType: "json",
                 success: function (response) {
-                // Handle the response from the server
-                console.log(response);
+                    // Handle the response from the server
+                    console.log(response);
+                    //var data = JSON.parse(response);
+                    Processrecord++;
+                    if (Totalrecord == Processrecord) {
+                        //alert("starting to post");
+                        PostGRN();
+                    }
 
-                var data = JSON.parse(response);
-                
+
+
+
             },
             error: function () {
                 // Display error message
@@ -201,6 +213,7 @@
                         td = td + "<td>" + item.PORate + "</td>";
                         td = td + "<td><input id='challan_rate" + index + "' type='text' /></td>";
                         $("#grnBody").append("<tr>" + td + "</tr>");
+                        Totalrecord++;
                     });
                 },
                 error: function () {

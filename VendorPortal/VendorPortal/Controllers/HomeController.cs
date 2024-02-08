@@ -35,6 +35,11 @@ namespace VendorPortal.Controllers
     {
         BL_DB focus_db = new BL_DB();
         public static string connection = "";
+        string PostDCNo="";
+        int PostDCDate = 0;
+        string PostBillNo = "";
+        int PostBillDate = 0;
+        int DocDate = 0;
         public ActionResult Index()
         {
             return View();
@@ -337,7 +342,7 @@ namespace VendorPortal.Controllers
         public ActionResult GetPO()
         {
             string json_return = "";
-            string sql = "select vIcs_PndngLstNew.*, mCore_Department.sName[BranchName] from vIcs_PndngLstNew inner join mCore_Department on vIcs_PndngLstNew.Branch = mCore_Department.iMasterId where Status In('Pending', 'Partial Consumed') and Account = " + Session["UserID"];
+            string sql = "select vIcs_PndngLstNew.*, mCore_Department.sName[BranchName] from vIcs_PndngLstNew inner join mCore_Department on vIcs_PndngLstNew.Branch = mCore_Department.iMasterId where Status In('Pending', 'Partial Consumed') and iVoucherType IN (2564) and Account = " + Session["UserID"];
             using (SqlConnection myConnection = new SqlConnection(connection))
             {
                 SqlCommand oCmd = new SqlCommand(sql, myConnection);
@@ -698,10 +703,398 @@ namespace VendorPortal.Controllers
         [HttpPost]
         public ActionResult PostGRN()
         {
+            using (var clientCENT = new WebClient())
+            {
+                string sessionID = GetSession("localhost", Session["API_UserName"].ToString(), Session["API_Password"].ToString(), Session["API_CompanyCode"].ToString());
+                string strValue = "";
+                int PostBodyId = 10;
+                clientCENT.Encoding = Encoding.UTF8;
+                clientCENT.Headers.Add("fSessionId", sessionID);
+                clientCENT.Headers.Add("Content-Type", "application/json");
+                string POdocNo = "";
+                strValue = $@"select sVoucherNo from tCore_Header_0 where iHeaderId=(select iHeaderId from tCore_Data_0 where iBodyId=10)";
+                POdocNo = Convert.ToString(clsGeneric.ShowRecord(252, strValue));
+                POdocNo = "2123-2400300001";
+                clsGeneric.writeLog("Download CENT URL: " + "http://localhost/Focus8API/Screen/Transactions/2564"+ "/" + POdocNo);
+                var responseCENT = clientCENT.DownloadString("http://localhost/Focus8API/Screen/Transactions/2564"+ "/" + POdocNo);
+                clsGeneric.writeLog("response CENT: " + responseCENT);
+               
+                if (responseCENT != null)
+                {
+                    var responseDataCENT = JsonConvert.DeserializeObject<APIResponse.PostResponse>(responseCENT);
+                    if (responseDataCENT.result == -1)
+                    {
+                        return Json(new { status = false, data = new { message = responseDataCENT.message } });
+                    }
+                    else
+                    {
+                        if (responseDataCENT.data.Count != 0)
+                        {
+
+                            var extHeader = JsonConvert.DeserializeObject<Hashtable>(JsonConvert.SerializeObject(responseDataCENT.data[0]["Header"]));
+                           
+                            if (responseDataCENT.data[0]["Footer"].ToString() != "[]")
+                            {
+                                var extFooter = JsonConvert.DeserializeObject<List<Hashtable>>(JsonConvert.SerializeObject(responseDataCENT.data[0]["Footer"]));                            
+                            }
+                            var extBody = JsonConvert.DeserializeObject<List<Hashtable>>(JsonConvert.SerializeObject(responseDataCENT.data[0]["Body"]));
+                            string json_return2 = "Data Inserted Successfully";
+                            var dataTable = new DataTable();
+                            string sql = "select ICS_VendorPortal_GRN.* ,dbo.DateToInt(GetDate()) as TodayDate "
+                            + "from ICS_VendorPortal_GRN "
+                            + "Where ICS_VendorPortal_GRN.Session_Id = '"+ Session.SessionID + "' and ICS_VendorPortal_GRN.User_Id = "+ Session["UserID"];
+                            using (SqlConnection myConnection = new SqlConnection(connection))
+                            {
+                                SqlCommand oCmd = new SqlCommand(sql, myConnection);
+                                myConnection.Open();
+
+                                var dataReader = oCmd.ExecuteReader();
+
+                                dataTable.Load(dataReader);
+
+                                json_return2 = ConvertIntoJson(dataTable);
+                                myConnection.Close();
+                            }
+                            Hashtable headerCBROD = new Hashtable();
+                            foreach (DataRow row in dataTable.Rows)
+                            {
+                                
+                                headerCBROD.Add("DocNo", ""); 
+                                headerCBROD.Add("Date", row["TodayDate"]);
+                                headerCBROD.Add("PurchaseAC__Id", 80);
+                                headerCBROD.Add("VendorAC__Id", Convert.ToInt32(extHeader["VendorAC__Id"]));
+                                headerCBROD.Add("Branch__Id", Convert.ToInt32(extHeader["Branch__Id"]));
+                                headerCBROD.Add("Dept__Id", Convert.ToInt32(extHeader["Dept__Id"]));
+                                headerCBROD.Add("Works Center__Id", Convert.ToInt32(extHeader["Works Center__Id"]));
+                                headerCBROD.Add("Vehicle__Id", Convert.ToInt32(extHeader["Vehicle__Id"]));
+
+                                headerCBROD.Add("DCNo", row["DCNo"].ToString());
+                                headerCBROD.Add("DCDate", row["DCDate"]);
+                                headerCBROD.Add("BillNo", row["BillNo"].ToString());
+                                headerCBROD.Add("BillDate", row["BillDate"]);
+
+                                headerCBROD.Add("sNarration", Convert.ToString(extHeader["sNarration"]));
+                                headerCBROD.Add("CreditDay", Convert.ToInt32(extHeader["CreditDay"]));
+                                headerCBROD.Add("DeliveryExpectedDt", Convert.ToInt32(extHeader["DeliveryExpectedDt"]));
+                            }
+                            List<System.Collections.Hashtable> lstBody = new List<System.Collections.Hashtable>();
+                            //Hashtable bodyCBROD = new Hashtable();
+                            PostBodyId = 10;
+                            int tempFor1 = extBody.Count - 1;
+                            for (int i = 0; i <= tempFor1; i++)
+                            {
+                                if (PostBodyId == Convert.ToInt32(extBody[i]["TransactionId"]))
+                                {
+                                    string json_return1 = "Data Inserted Successfully";
+                                    var dataTable1 = new DataTable();
+                                    string sql1 = "select ICS_VendorPortal_GRN.* , tCore_Data_0.iBookNo, tCore_Data_0.iFaTag, tCore_Data_0.iInvTag, "
+                                    + "tCore_Indta_0.iProduct, tCore_Indta_0.iUnit,vmCore_Department.UnderQCWH,dbo.DateToInt(GetDate()) as TodayDate,tCore_Header_0.sVoucherNo, "
+                                    + "(select iLinkPathId  from vmCore_Links_0 where BaseVoucherId=2564 and LinkVoucherId=1281) as LinkId "
+                                    + "from ICS_VendorPortal_GRN inner join "
+                                    + "tCore_Data_0 on ICS_VendorPortal_GRN.iBodyId = tCore_Data_0.iBodyId inner join "
+                                    + "tCore_Indta_0 on ICS_VendorPortal_GRN.iBodyId = tCore_Indta_0.iBodyId inner join "
+                                    + "vmCore_Department on tCore_Data_0.iFaTag = vmCore_Department.iMasterId inner join "
+                                    + "tCore_Header_0 on tCore_Header_0.iHeaderId=tCore_Data_0.iHeaderId "
+                                    + "Where ICS_VendorPortal_GRN.Session_Id = '"+ Session.SessionID + "' and ICS_VendorPortal_GRN.User_Id = "+ Session["UserID"];
+                                    using (SqlConnection myConnection = new SqlConnection(connection))
+                                    {
+                                        SqlCommand oCmd = new SqlCommand(sql1, myConnection);
+                                        myConnection.Open();
+
+                                        var dataReader = oCmd.ExecuteReader();
+
+                                        dataTable1.Load(dataReader);
+
+                                        json_return1 = ConvertIntoJson(dataTable1);
+                                        myConnection.Close();
+                                    }
+                                    foreach (DataRow row in dataTable1.Rows)
+                                    {
+                                        Hashtable bodyCBROD = new Hashtable();
+                                        bodyCBROD.Add("Warehouse__Id", row["UnderQCWH"]);
+                                        bodyCBROD.Add("Item__Id", Convert.ToInt32(extBody[i]["Item__Id"]));
+                                        bodyCBROD.Add("Quantity", row["ChallanQty"]);
+                                        bodyCBROD.Add("Rate", row["ChallanRate"]);
+                                        bodyCBROD.Add("Unit__Id", Convert.ToInt32(extBody[i]["Unit__Id"]));
+                                        //bodyCBROD.Add("CutEntryDt", Convert.ToInt32(extBody[i]["TransactionId"]));
+                                        bodyCBROD.Add("Tax Code__Id", Convert.ToInt32(extBody[i]["Tax Code__Id"]));
+                                        bodyCBROD.Add("sRemarks", "");
+                                        bodyCBROD.Add("PONo","PORM:" + row["sVoucherNo"].ToString());
+                                        bodyCBROD.Add("PODate", Convert.ToInt32(extHeader["Date"]));
+                                        bodyCBROD.Add("QCStatus", 1);
+                                        bodyCBROD.Add("BaseQuantity", row["ChallanQty"]);
+
+                                        Hashtable bodyBatchCBROD = new Hashtable
+                                        {
+                                            {"BatchNo",  row["sVoucherNo"].ToString() + "/" + "1" },
+                                            {"MfgDate__Id", row["TodayDate"]}
+                                            //{"BatchRate", Convert.ToDecimal(BlankRate)},
+                                            //{"Qty", Convert.ToDecimal(BlankQty)}
+                                        };
+                                        //List<System.Collections.Hashtable> lstBatch = new List<System.Collections.Hashtable>();
+                                        //lstBatch.Add(bodyBatchCBROD);
+
+
+                                        Hashtable bodyPOQtyCBROD = new Hashtable
+                                        {
+                                            {"Input", row["POQty"]},
+                                            { "FieldName", "PO Qty"},
+                                            //"FieldId": 105,
+                                            { "ColMap", 0},
+                                            { "Value", row["POQty"]}
+                                        };
+                                        Hashtable bodyChallanQtyBROD = new Hashtable
+                                        {
+                                            { "Input", row["ChallanQty"]},
+                                            { "FieldName", "Challan Qty"},
+                                            //"FieldId": 106,
+                                            { "ColMap", 1},
+                                            { "Value", row["ChallanQty"]}
+                                        };
+                                        Hashtable bodyReceivedQtyBROD = new Hashtable
+                                         {
+                                            { "Input", row["ChallanQty"]},
+                                            { "FieldName", "Received Qty" },
+                                            //"FieldId", 107,
+                                            { "ColMap", 2 },
+                                            { "Value", row["ChallanQty"] }
+                                        };
+                                    //    Hashtable bodyLPurchaseOrderRMBROD = new Hashtable
+                                    //    { 
+                                        
+                                    //        { "BaseTransactionId", row["iBodyId"]},
+                                    //        { "VoucherType", 2564 },
+                                    //        { "VoucherNo", "PORM,"+ row["sVoucherNo"]},
+                                    //        { "UsedValue", row["ChallanQty"]},
+                                    //        { "LinkId", row["LinkId"]},
+                                    //        { "RefId", row["iBodyId"]}
+
+                                    //};
+                                        Hashtable bodyRefereceGRNRM = new Hashtable();
+                                        bodyRefereceGRNRM.Add("BaseTransactionId", row["iBodyId"]);
+                                        bodyRefereceGRNRM.Add("VoucherType", 2564);
+                                        bodyRefereceGRNRM.Add("VoucherNo", "PORM" + ":" + row["sVoucherNo"]);
+                                        bodyRefereceGRNRM.Add("UsedValue", row["ChallanQty"]);
+                                        bodyRefereceGRNRM.Add("LinkId", row["LinkId"]);
+                                        bodyRefereceGRNRM.Add("RefId", row["iBodyId"]);
+
+                                        Hashtable bodyPORateBROD = new Hashtable
+                                        {
+                                            { "Input", row["PORate"] },
+                                            { "FieldName", "PO Rate" },
+                                            //"FieldId", 122,
+                                            { "ColMap", 17 },
+                                            { "Value", row["PORate"]}
+                                        };
+                                        Hashtable bodyChallanRateBROD = new Hashtable
+                                        {
+                                            { "Input", row["ChallanRate"]},
+                                            { "FieldName", "Challan Rate" },
+                                            //"FieldId", 110},
+                                            { "ColMap", 5 },
+                                            { "Value", row["ChallanRate"]}
+                                        };
+                                        Hashtable bodyPassRateBROD = new Hashtable
+                                        {
+                                            { "Input", row["ChallanRate"]},
+                                            { "FieldName", "Pass Rate" },
+                                            //"FieldId", 1441,
+                                            { "ColMap", 22 },
+                                            { "Value", row["ChallanRate"]}
+                                        };
+                                        Hashtable bodyDiscountBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Discount" },
+                                            //"FieldId", 112,
+                                            { "ColMap", 7},
+                                            { "Value", 0}
+                                        };
+                                        Hashtable bodyPackForwdBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Pack Forwd" },
+                                            //"FieldId", 113,
+                                            { "ColMap", 8 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyFreightGSTBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Freight GST" },
+                                            //"FieldId", 114,
+                                            { "ColMap", 9 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyAddLessOtherBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Add/Less Other" },
+                                            //"FieldId", 115,
+                                            { "ColMap", 10 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyCGSTBROD = new Hashtable
+                                        {
+                                            { "Input", 9 },
+                                            { "FieldName", "CGST" },
+                                            //"FieldId", 117,
+                                            { "ColMap", 12 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodySGSTBROD = new Hashtable
+                                        {
+                                            { "Input", 9 },
+                                            { "FieldName", "SGST" },
+                                            //"FieldId", 118,
+                                            { "ColMap", 13 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyIGSTBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "IGST" },
+                                            //"FieldId", 119,
+                                            { "ColMap", 14 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyCessBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Cess" },
+                                            //"FieldId", 120,
+                                            { "ColMap", 15 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyLessGrossBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Less Gross" },
+                                            //"FieldId", 123,
+                                            { "ColMap", 18 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyDebitQtyBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Debit Qty" },
+                                            //"FieldId", 1174,
+                                            { "ColMap", 21 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyDebitRateBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Debit Rate" },
+                                            //"FieldId", 1173,
+                                            { "ColMap", 20 },
+                                            { "Value", 0 }
+                                        };
+                                        Hashtable bodyBasicDebitBROD = new Hashtable
+                                        {
+                                            { "Input", 0 },
+                                            { "FieldName", "Basic Debit" },
+                                            //"FieldId", 1140,
+                                            { "ColMap", 19 },
+                                            { "Value", 0 }
+                                        };
+
+                                        Hashtable bodyStkRateBROD = new Hashtable
+                                        {
+                                            { "Input", row["ChallanRate"]},
+                                            { "FieldName", "Stk Rate" },
+                                            ////"FieldId", 1927,
+                                            { "ColMap", 23 },
+                                            { "Value", row["ChallanRate"]}
+                                        };
+                                        //List<System.Collections.Hashtable> lstPOQty = new List<System.Collections.Hashtable>();
+                                        //lstPOQty.Add(bodyPOQtyCBROD);
+
+                                        List<System.Collections.Hashtable> lstRefernce = new List<System.Collections.Hashtable>();
+                                        //List<System.Collections.Hashtable> lstBatch = new List<System.Collections.Hashtable>();
+                                        //lstBatch.Add(bodyBatchCBROD);
+                                        lstRefernce.Add(bodyRefereceGRNRM);
+
+                                        bodyCBROD.Add("L-Purchase Order RM", lstRefernce);
+                                        //bodyCBROD.Add("Batch", lstBatch);
+
+                                        bodyCBROD.Add("Batch", bodyBatchCBROD);
+                                        bodyCBROD.Add("PO Qty", bodyPOQtyCBROD);
+                                        bodyCBROD.Add("Challan Qty", bodyChallanQtyBROD);
+                                        bodyCBROD.Add("Received Qty", bodyReceivedQtyBROD);
+                                        //bodyCBROD.Add("L-Purchase Order RM", bodyLPurchaseOrderRMBROD);
+                                        bodyCBROD.Add("PO Rate", bodyPORateBROD);
+                                        bodyCBROD.Add("Challan Rate", bodyChallanRateBROD);
+                                        bodyCBROD.Add("Pass Rate", bodyPassRateBROD);
+                                        bodyCBROD.Add("Discount", bodyDiscountBROD);
+                                        bodyCBROD.Add("Pack Forwd", bodyPackForwdBROD);
+                                        bodyCBROD.Add("Freight GST", bodyFreightGSTBROD);
+                                        bodyCBROD.Add("Add/Less Other", bodyAddLessOtherBROD);
+                                        bodyCBROD.Add("CGST", bodyCGSTBROD);
+                                        bodyCBROD.Add("SGST", bodySGSTBROD);
+                                        bodyCBROD.Add("IGST", bodyIGSTBROD);
+                                        bodyCBROD.Add("Cess", bodyCessBROD);
+                                        bodyCBROD.Add("Less Gross", bodyLessGrossBROD);
+                                        bodyCBROD.Add("Debit Qty", bodyDebitQtyBROD);
+                                        bodyCBROD.Add("Debit Rate", bodyDebitRateBROD);
+                                        bodyCBROD.Add("Basic Debit", bodyBasicDebitBROD);
+                                        bodyCBROD.Add("Stk Rate", bodyStkRateBROD);
+                                        lstBody.Add(bodyCBROD);
+                                    }
+                                }                             
+                            }                            
+                            System.Collections.Hashtable objHash = new System.Collections.Hashtable();
+                            objHash.Add("Body", lstBody);
+                            objHash.Add("Header", headerCBROD);
+
+                            List<System.Collections.Hashtable> lstHash = new List<System.Collections.Hashtable>();
+                            lstHash.Add(objHash);
+                            HashData objHashRequest = new HashData();
+                            objHashRequest.data = lstHash;
+                            string sContentCBROD = JsonConvert.SerializeObject(objHashRequest);
+                            clsGeneric.writeLog("Content CBROD: " + sContentCBROD);
+                            clsGeneric.writeLog("Upload URL: " + "http://localhost/Focus8API/Transactions/Vouchers/" + 1281);
+                            using (var clientCBROD = new WebClient())
+                            {
+                                clientCBROD.Encoding = Encoding.UTF8;
+                                clientCBROD.Headers.Add("fSessionId", GetSession("localhost", Session["API_UserName"].ToString(), Session["API_Password"].ToString(), Session["API_CompanyCode"].ToString()));
+                                clientCBROD.Headers.Add("Content-Type", "application/json");
+                                var responseCBROD = clientCBROD.UploadString("http://localhost/Focus8API/Transactions/Vouchers/" + 1281, sContentCBROD);
+                                clsGeneric.writeLog("response CBROD: " + responseCBROD);
+                                if (responseCBROD != null)
+                                {
+                                    var responseDataCBROD = JsonConvert.DeserializeObject<APIResponse.PostResponse>(responseCBROD);
+                                    if (responseDataCBROD.result == -1)
+                                    {
+                                        //UpdateStatus(vtype, docNo, 0, CompanyId);
+                                        return Json(new { status = false, data = new { message = responseDataCBROD.message } });
+                                    }
+                                    else
+                                    {
+                                        var iMasterId = JsonConvert.DeserializeObject<string>(JsonConvert.SerializeObject(responseDataCBROD.data[0]["VoucherNo"]));
+                                        //UpdateBatchs(vtype, Docdate, iMasterId, CompanyId);
+                                        //UpdateStatus(vtype, docNo, 1, CompanyId);
+                                        return Json(new { status = true, data = new { message = "Posting Successful" } });
+                                    }
+                                }
+
+                            }
+
+                        }
+
+                    }
+                }
+
+
+            }
             string json_return = "Data Inserted Successfully";
-
-
-
+            var jsonResult = Json(json_return, "application/json", System.Text.Encoding.UTF8, JsonRequestBehavior.AllowGet);
+            jsonResult.MaxJsonLength = int.MaxValue;
+            return jsonResult;
+        }
+        public ActionResult PostGRN_old()
+        {
+            string json_return = "Data Inserted Successfully";
 
             Hashtable headerData = new Hashtable();
             List<System.Collections.Hashtable> bodyDataList = new List<System.Collections.Hashtable>();
@@ -709,7 +1102,6 @@ namespace VendorPortal.Controllers
 
 
             headerData.Add("PurchaseAC__Id", 80);
-
             headerData.Add("DocNo", "");
             headerData.Add("VendorAC__Id", 1160);
             headerData.Add("Branch__Id", 12);
