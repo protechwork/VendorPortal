@@ -137,21 +137,27 @@
                 data: {
                 },
             dataType: "json",
-            success: function (response) {                
+            success: function (response) {
                 console.log(response);
-
-                var data = JSON.parse(response);
-                alert("Data Posted Successfully");
+                if(response.status === true)
+                {
+                    alert(response.data.message);
+                    document.location = "@Url.Action("PendingOrder", "Home")";
+                }
+                else
+                {
+                    alert(response.data.message);
+                }
 
             },
-            error: function () {                
+            error: function () {
                 alert("An error occurred while updating Database.");
             }
         });
         }
 
         function SaveGRN(IBody, Pend_Qty, PORate, ChallanQty, ChallanRate)
-        {            
+        {
             console.log(IBody, Pend_Qty, PORate, ChallanQty, ChallanRate);
             //return;
             $.ajax({
@@ -203,7 +209,7 @@
                     console.log(response);
 
                     var data = JSON.parse(response);
-                    data.forEach(function (item, index) {                                              
+                    data.forEach(function (item, index) {
                         $("#branch").val(item.branch_name);
                         var td = "";
                         td = td + "<td>" + (Number(index) + 1) + "</td>";

@@ -706,15 +706,60 @@ namespace VendorPortal.Controllers
             using (var clientCENT = new WebClient())
             {
                 string sessionID = GetSession("localhost", Session["API_UserName"].ToString(), Session["API_Password"].ToString(), Session["API_CompanyCode"].ToString());
-                string strValue = "";
-                int PostBodyId = 10;
+                int PostBodyId = 0;
+                string strValue = "select * from ICS_VendorPortal_GRN where User_Id='"+ Session["UserID"] + "' AND Session_Id='" + Session.SessionID + "' ";
+
+                clsGeneric.writeLog("Query : " + strValue);
+                DataTable dataTable11 = new DataTable();
+                using (SqlConnection myConnection = new SqlConnection(connection))
+                {
+                    try
+                    {                                        
+                        SqlCommand oCmd = new SqlCommand(strValue, myConnection);
+                        myConnection.Open();
+
+                        var dataReader = oCmd.ExecuteReader();
+
+                        dataTable11.Load(dataReader);
+                        PostBodyId = Convert.ToInt32(dataTable11.Rows[0]["iBodyId"]);
+                        myConnection.Close();
+                    }
+                    catch (Exception e)
+                    {                        
+                        clsGeneric.writeLog("Exception Occure: " + e.Message);
+                    }
+                }
+
+
+                
                 clientCENT.Encoding = Encoding.UTF8;
                 clientCENT.Headers.Add("fSessionId", sessionID);
                 clientCENT.Headers.Add("Content-Type", "application/json");
                 string POdocNo = "";
-                strValue = $@"select sVoucherNo from tCore_Header_0 where iHeaderId=(select iHeaderId from tCore_Data_0 where iBodyId=10)";
+                strValue = $@"select sVoucherNo from tCore_Header_0 where iHeaderId=(select iHeaderId from tCore_Data_0 where iBodyId="+ PostBodyId + ")";
                 POdocNo = Convert.ToString(clsGeneric.ShowRecord(252, strValue));
-                POdocNo = "2123-2400300001";
+
+                clsGeneric.writeLog("Query String:" + strValue);
+                using (SqlConnection myConnection = new SqlConnection(connection))
+                {
+                    try
+                    {
+                        SqlCommand oCmd = new SqlCommand(strValue, myConnection);
+                        myConnection.Open();
+
+                        var dataReader = oCmd.ExecuteReader();
+                        dataTable11 = new DataTable();
+                        dataTable11.Load(dataReader);
+                        POdocNo = Convert.ToString(dataTable11.Rows[0]["sVoucherNo"]);
+                        myConnection.Close();
+                    }
+                    catch (Exception e)
+                    {
+                        clsGeneric.writeLog("Exception Occure: " + e.Message);
+                    }
+                }
+
+
                 clsGeneric.writeLog("Download CENT URL: " + "http://localhost/Focus8API/Screen/Transactions/2564"+ "/" + POdocNo);
                 var responseCENT = clientCENT.DownloadString("http://localhost/Focus8API/Screen/Transactions/2564"+ "/" + POdocNo);
                 clsGeneric.writeLog("response CENT: " + responseCENT);
@@ -776,10 +821,11 @@ namespace VendorPortal.Controllers
                                 headerCBROD.Add("sNarration", Convert.ToString(extHeader["sNarration"]));
                                 headerCBROD.Add("CreditDay", Convert.ToInt32(extHeader["CreditDay"]));
                                 headerCBROD.Add("DeliveryExpectedDt", Convert.ToInt32(extHeader["DeliveryExpectedDt"]));
+
+                                break;
                             }
                             List<System.Collections.Hashtable> lstBody = new List<System.Collections.Hashtable>();
-                            //Hashtable bodyCBROD = new Hashtable();
-                            PostBodyId = 10;
+                            //Hashtable bodyCBROD = new Hashtable();                           
                             int tempFor1 = extBody.Count - 1;
                             for (int i = 0; i <= tempFor1; i++)
                             {
@@ -902,78 +948,99 @@ namespace VendorPortal.Controllers
                                             { "ColMap", 22 },
                                             { "Value", row["ChallanRate"]}
                                         };
+                                        var obj = JObject.Parse(extBody[i]["Discount"].ToString());
+                                        var input = (string)obj["Input"];
+
                                         Hashtable bodyDiscountBROD = new Hashtable
                                         {
-                                            { "Input", 0 },
+                                            { "Input", input },
                                             { "FieldName", "Discount" },
                                             //"FieldId", 112,
                                             { "ColMap", 7},
                                             { "Value", 0}
                                         };
+                                        obj = JObject.Parse(extBody[i]["Pack Forwd"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodyPackForwdBROD = new Hashtable
                                         {
-                                            { "Input", 0 },
+                                            { "Input", input },
                                             { "FieldName", "Pack Forwd" },
                                             //"FieldId", 113,
                                             { "ColMap", 8 },
                                             { "Value", 0 }
                                         };
+                                        obj = JObject.Parse(extBody[i]["Freight GST"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodyFreightGSTBROD = new Hashtable
                                         {
-                                            { "Input", 0 },
+                                            { "Input", input },
                                             { "FieldName", "Freight GST" },
                                             //"FieldId", 114,
                                             { "ColMap", 9 },
                                             { "Value", 0 }
                                         };
+                                        obj = JObject.Parse(extBody[i]["Add/Less Other"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodyAddLessOtherBROD = new Hashtable
                                         {
-                                            { "Input", 0 },
+                                            { "Input", input },
                                             { "FieldName", "Add/Less Other" },
                                             //"FieldId", 115,
                                             { "ColMap", 10 },
                                             { "Value", 0 }
                                         };
+                                        obj = JObject.Parse(extBody[i]["CGST"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodyCGSTBROD = new Hashtable
                                         {
-                                            { "Input", 9 },
+                                            { "Input", input },
                                             { "FieldName", "CGST" },
                                             //"FieldId", 117,
                                             { "ColMap", 12 },
                                             { "Value", 0 }
                                         };
+                                        obj = JObject.Parse(extBody[i]["SGST"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodySGSTBROD = new Hashtable
                                         {
-                                            { "Input", 9 },
+                                            { "Input", input },
                                             { "FieldName", "SGST" },
                                             //"FieldId", 118,
                                             { "ColMap", 13 },
                                             { "Value", 0 }
                                         };
+                                        obj = JObject.Parse(extBody[i]["IGST"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodyIGSTBROD = new Hashtable
                                         {
-                                            { "Input", 0 },
+                                            { "Input", input },
                                             { "FieldName", "IGST" },
                                             //"FieldId", 119,
                                             { "ColMap", 14 },
                                             { "Value", 0 }
                                         };
+                                        obj = JObject.Parse(extBody[i]["Cess"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodyCessBROD = new Hashtable
                                         {
-                                            { "Input", 0 },
+                                            { "Input", input },
                                             { "FieldName", "Cess" },
                                             //"FieldId", 120,
                                             { "ColMap", 15 },
                                             { "Value", 0 }
                                         };
+                                        /*obj = JObject.Parse(extBody[i]["Less Gross"].ToString());
+                                        input = (string)obj["Input"];
                                         Hashtable bodyLessGrossBROD = new Hashtable
                                         {
-                                            { "Input", 0 },
+                                            { "Input", input },
                                             { "FieldName", "Less Gross" },
                                             //"FieldId", 123,
                                             { "ColMap", 18 },
                                             { "Value", 0 }
-                                        };
+                                        };*/
+                                        //obj = JObject.Parse(extBody[i]["Debit Qty"].ToString());
+                                        //input = (string)obj["Input"];
                                         Hashtable bodyDebitQtyBROD = new Hashtable
                                         {
                                             { "Input", 0 },
@@ -982,6 +1049,8 @@ namespace VendorPortal.Controllers
                                             { "ColMap", 21 },
                                             { "Value", 0 }
                                         };
+                                        //obj = JObject.Parse(extBody[i]["Debit Rate"].ToString());
+                                        //input = (string)obj["Input"];
                                         Hashtable bodyDebitRateBROD = new Hashtable
                                         {
                                             { "Input", 0 },
@@ -990,6 +1059,8 @@ namespace VendorPortal.Controllers
                                             { "ColMap", 20 },
                                             { "Value", 0 }
                                         };
+                                        //obj = JObject.Parse(extBody[i]["Basic Debit"].ToString());
+                                        //input = (string)obj["Input"];
                                         Hashtable bodyBasicDebitBROD = new Hashtable
                                         {
                                             { "Input", 0 },
@@ -998,7 +1069,7 @@ namespace VendorPortal.Controllers
                                             { "ColMap", 19 },
                                             { "Value", 0 }
                                         };
-
+                                       
                                         Hashtable bodyStkRateBROD = new Hashtable
                                         {
                                             { "Input", row["ChallanRate"]},
@@ -1034,7 +1105,7 @@ namespace VendorPortal.Controllers
                                         bodyCBROD.Add("SGST", bodySGSTBROD);
                                         bodyCBROD.Add("IGST", bodyIGSTBROD);
                                         bodyCBROD.Add("Cess", bodyCessBROD);
-                                        bodyCBROD.Add("Less Gross", bodyLessGrossBROD);
+                                        //bodyCBROD.Add("Less Gross", bodyLessGrossBROD);
                                         bodyCBROD.Add("Debit Qty", bodyDebitQtyBROD);
                                         bodyCBROD.Add("Debit Rate", bodyDebitRateBROD);
                                         bodyCBROD.Add("Basic Debit", bodyBasicDebitBROD);
@@ -1087,10 +1158,15 @@ namespace VendorPortal.Controllers
 
 
             }
+
+            /*
             string json_return = "Data Inserted Successfully";
             var jsonResult = Json(json_return, "application/json", System.Text.Encoding.UTF8, JsonRequestBehavior.AllowGet);
             jsonResult.MaxJsonLength = int.MaxValue;
             return jsonResult;
+            */
+
+            return Json(new { status = true, data = new { message = "Data Inserted Successfully" } });
         }
         public ActionResult PostGRN_old()
         {
